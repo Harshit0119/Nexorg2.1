@@ -71,6 +71,7 @@ interface RoomLabManagementProps {
   onRemoveLabAvailability?: (id: string) => void;
   currentRole: UserRole;
   userAssignedDeptId?: string;
+  initialTab?: 'rooms' | 'labs';
 }
 
 type ResourceTab = 'rooms' | 'labs' | 'availability' | 'analytics';
@@ -94,8 +95,15 @@ export const RoomLabManagement: React.FC<RoomLabManagementProps> = ({
   onRemoveLabAvailability,
   currentRole,
   userAssignedDeptId,
+  initialTab,
 }) => {
-  const [activeTab, setActiveTab] = useState<ResourceTab>('rooms');
+  const [activeTab, setActiveTab] = useState<ResourceTab>(initialTab || 'rooms');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState<string>(
     currentRole === 'ADMIN' && userAssignedDeptId ? userAssignedDeptId : 'ALL'

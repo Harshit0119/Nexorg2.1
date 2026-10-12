@@ -6,6 +6,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Institute, Department, User, UserRole } from '../types/database';
 import { departmentSchema, instituteSetupSchema } from '../lib/validations';
+import { DEMO_INSTITUTE, isDemoInstitute } from './demoData';
 
 const STORAGE_KEYS = {
   INSTITUTES: 'nexorg_institutes_v2',
@@ -43,6 +44,11 @@ export async function fetchInstitute(identifier: string): Promise<{
 }> {
   if (!identifier) {
     return { success: false, error: 'Institute identifier required' };
+  }
+
+  // 0. Demo Institute isolated handling
+  if (isDemoInstitute(identifier)) {
+    return { success: true, data: DEMO_INSTITUTE };
   }
 
   // 1. Try Supabase if configured

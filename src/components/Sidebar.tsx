@@ -1,51 +1,51 @@
 import React, { useEffect } from 'react';
 import {
-  LayoutDashboard,
   Building2,
   Network,
   Users2,
   BookOpen,
-  CalendarClock,
-  Scale,
   DoorOpen,
-  ShieldAlert,
-  Database,
-  Info,
-  ChevronRight,
-  Sparkles,
+  CalendarClock,
   BarChart3,
-  CreditCard,
-  Bell,
-  FileText,
   Settings,
   ShieldCheck,
   CalendarX2,
   X,
   Layers,
   LogOut,
+  Users,
+  Calendar,
+  CheckSquare,
+  Sparkles,
+  Bell,
+  User as UserIcon
 } from 'lucide-react';
 import { UserRole } from '../types/database';
 
 export type NavTab = 
-  | 'overview'
+  // HEAD tabs
   | 'institute'
-  | 'institute-setup'
   | 'departments'
-  | 'team-invitations'
   | 'faculty'
   | 'subjects'
-  | 'availability'
-  | 'workload'
-  | 'leaves'
   | 'rooms-labs'
-  | 'clash-engine'
+  | 'timetable'
+  | 'leaves'
   | 'analytics'
-  | 'subscription'
-  | 'audit-logs'
-  | 'notifications'
-  | 'saas-admin'
   | 'settings'
-  | 'supabase';
+  // ADMIN specific tabs
+  | 'rooms'
+  | 'labs'
+  // FACULTY tabs
+  | 'my-subjects'
+  | 'my-classes'
+  | 'my-timetable'
+  | 'free-slots'
+  | 'leave-requests'
+  | 'student-lists'
+  | 'quick-attendance'
+  | 'announcements'
+  | 'profile';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -53,7 +53,6 @@ interface SidebarProps {
   currentRole: UserRole;
   facultyCount: number;
   deptCount: number;
-  invitationsCount?: number;
   pendingLeavesCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
@@ -66,7 +65,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentRole,
   facultyCount,
   deptCount,
-  invitationsCount = 0,
   pendingLeavesCount = 0,
   isMobileOpen = false,
   onCloseMobile,
@@ -91,161 +89,187 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const navItems = [
+  // 1. HEAD Dashboard Menu (Institute-wide access)
+  const headNavItems = [
     {
-      id: 'overview' as NavTab,
-      label: 'Institutional Overview',
-      icon: LayoutDashboard,
-      badge: null,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
+      id: 'institute' as NavTab,
+      label: 'Institute Management',
+      icon: Building2,
+      badge: 'Core',
     },
     {
       id: 'departments' as NavTab,
       label: 'Department Management',
       icon: Network,
-      badge: `${deptCount}`,
-      highlight: true,
-      roles: ['HEAD', 'ADMIN'],
-    },
-    {
-      id: 'team-invitations' as NavTab,
-      label: 'Team & Invitations',
-      icon: Users2,
-      badge: invitationsCount > 0 ? `${invitationsCount} Pending` : 'Invite',
-      highlight: true,
-      roles: ['HEAD', 'ADMIN'],
-    },
-    {
-      id: 'institute' as NavTab,
-      label: 'Institute Settings',
-      icon: Building2,
-      badge: 'Core',
-      roles: ['HEAD'],
-    },
-    {
-      id: 'institute-setup' as NavTab,
-      label: 'Setup Wizard',
-      icon: Sparkles,
-      badge: 'New',
-      roles: ['HEAD'],
+      badge: deptCount > 0 ? `${deptCount}` : null,
     },
     {
       id: 'faculty' as NavTab,
-      label: 'Faculty Management (M:N)',
+      label: 'Faculty Management',
       icon: Users2,
-      badge: 'Multi-Dept',
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
+      badge: facultyCount > 0 ? `${facultyCount}` : null,
     },
     {
       id: 'subjects' as NavTab,
-      label: 'Academic Structure & Subjects',
+      label: 'Subjects',
       icon: BookOpen,
-      badge: 'Courses',
-      highlight: true,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
-    },
-    {
-      id: 'availability' as NavTab,
-      label: 'Faculty Availability (Grid)',
-      icon: CalendarClock,
       badge: null,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
-    },
-    {
-      id: 'workload' as NavTab,
-      label: 'Workload & Quota Limits',
-      icon: Scale,
-      badge: null,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
-    },
-    {
-      id: 'leaves' as NavTab,
-      label: 'Leave & Substitution Engine',
-      icon: CalendarX2,
-      badge: pendingLeavesCount > 0 ? `${pendingLeavesCount} Pending` : 'Leaves',
-      highlight: true,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
     },
     {
       id: 'rooms-labs' as NavTab,
-      label: 'Rooms & Specialized Labs',
+      label: 'Rooms & Labs',
       icon: DoorOpen,
       badge: null,
-      roles: ['HEAD', 'ADMIN'],
     },
     {
-      id: 'clash-engine' as NavTab,
-      label: 'Timetable & Conflict Engine',
-      icon: ShieldAlert,
+      id: 'timetable' as NavTab,
+      label: 'Timetable',
+      icon: ShieldCheck,
       badge: 'Engine',
-      highlight: true,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
+    },
+    {
+      id: 'leaves' as NavTab,
+      label: 'Leave Management',
+      icon: CalendarX2,
+      badge: pendingLeavesCount > 0 ? `${pendingLeavesCount} Pending` : null,
     },
     {
       id: 'analytics' as NavTab,
-      label: 'Analytics Dashboard',
+      label: 'Analytics',
       icon: BarChart3,
-      badge: 'Charts',
-      highlight: true,
-      roles: ['HEAD', 'ADMIN', 'SUPER_ADMIN'],
-    },
-    {
-      id: 'subscription' as NavTab,
-      label: 'Subscription & Quotas',
-      icon: CreditCard,
-      badge: 'Pro Tier',
-      roles: ['HEAD', 'SUPER_ADMIN'],
-    },
-    {
-      id: 'audit-logs' as NavTab,
-      label: 'Compliance Audit Logs',
-      icon: FileText,
-      badge: 'Security',
-      roles: ['HEAD', 'ADMIN', 'SUPER_ADMIN'],
-    },
-    {
-      id: 'notifications' as NavTab,
-      label: 'Notification Center',
-      icon: Bell,
       badge: null,
-      roles: ['HEAD', 'ADMIN', 'FACULTY', 'SUPER_ADMIN'],
-    },
-    {
-      id: 'saas-admin' as NavTab,
-      label: 'SaaS Platform Admin',
-      icon: ShieldCheck,
-      badge: 'Super Admin',
-      roles: ['SUPER_ADMIN', 'HEAD'],
     },
     {
       id: 'settings' as NavTab,
-      label: 'Platform Settings',
+      label: 'Settings',
       icon: Settings,
       badge: null,
-      roles: ['HEAD', 'ADMIN', 'FACULTY'],
-    },
-    {
-      id: 'supabase' as NavTab,
-      label: 'Supabase Architecture & DDL',
-      icon: Database,
-      badge: 'RLS',
-      roles: ['HEAD', 'ADMIN', 'FACULTY', 'SUPER_ADMIN'],
     },
   ];
+
+  // 2. ADMIN Dashboard Menu (Department-level access only)
+  const adminNavItems = [
+    {
+      id: 'faculty' as NavTab,
+      label: 'Faculty',
+      icon: Users2,
+      badge: 'Dept',
+    },
+    {
+      id: 'subjects' as NavTab,
+      label: 'Subjects',
+      icon: BookOpen,
+      badge: null,
+    },
+    {
+      id: 'timetable' as NavTab,
+      label: 'Timetable',
+      icon: ShieldCheck,
+      badge: 'Schedule',
+    },
+    {
+      id: 'rooms' as NavTab,
+      label: 'Rooms',
+      icon: DoorOpen,
+      badge: null,
+    },
+    {
+      id: 'labs' as NavTab,
+      label: 'Labs',
+      icon: Layers,
+      badge: null,
+    },
+    {
+      id: 'leaves' as NavTab,
+      label: 'Leave Requests',
+      icon: CalendarX2,
+      badge: pendingLeavesCount > 0 ? `${pendingLeavesCount} Pending` : null,
+    },
+  ];
+
+  // 3. FACULTY Dashboard Menu (Personal academic dashboard only)
+  const facultyNavItems = [
+    {
+      id: 'my-subjects' as NavTab,
+      label: 'My Subjects',
+      icon: BookOpen,
+      badge: null,
+    },
+    {
+      id: 'my-classes' as NavTab,
+      label: 'My Classes',
+      icon: Users,
+      badge: null,
+    },
+    {
+      id: 'my-timetable' as NavTab,
+      label: 'My Timetable',
+      icon: Calendar,
+      badge: 'Personal',
+    },
+    {
+      id: 'free-slots' as NavTab,
+      label: 'Available Free Slots',
+      icon: CalendarClock,
+      badge: null,
+    },
+    {
+      id: 'leave-requests' as NavTab,
+      label: 'Leave Requests',
+      icon: CalendarX2,
+      badge: null,
+    },
+    {
+      id: 'student-lists' as NavTab,
+      label: 'Student Lists',
+      icon: CheckSquare,
+      badge: null,
+    },
+    {
+      id: 'quick-attendance' as NavTab,
+      label: 'Quick Attendance',
+      icon: Sparkles,
+      badge: 'Fast',
+    },
+    {
+      id: 'announcements' as NavTab,
+      label: 'Announcements',
+      icon: Bell,
+      badge: null,
+    },
+    {
+      id: 'profile' as NavTab,
+      label: 'Profile',
+      icon: UserIcon,
+      badge: null,
+    },
+  ];
+
+  // Pick exact items for current role
+  let roleTitle = 'Institutional Head';
+  let roleSubtitle = 'Campus-wide Administration';
+  let activeNavItems = headNavItems;
+
+  if (currentRole === 'ADMIN') {
+    roleTitle = 'Department Admin';
+    roleSubtitle = 'Department-Level Scope';
+    activeNavItems = adminNavItems;
+  } else if (currentRole === 'FACULTY') {
+    roleTitle = 'Academic Faculty';
+    roleSubtitle = 'Personal Academic Workspace';
+    activeNavItems = facultyNavItems;
+  }
 
   const renderNavList = () => (
     <div className="space-y-6">
       <div>
         <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-          Resource Engine
+          {roleSubtitle}
         </div>
         <nav className="space-y-1">
-          {navItems.map((item) => {
-            const isAllowed = item.roles.includes(currentRole);
+          {activeNavItems.map((item) => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
-
-            if (!isAllowed) return null;
 
             return (
               <button
@@ -259,137 +283,122 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center gap-3">
                   <Icon
-                    className={`h-4 w-4 shrink-0 transition-colors ${
-                      isActive 
-                        ? 'text-[#06B6D4]' 
-                        : item.highlight 
-                        ? 'text-indigo-400 group-hover:text-indigo-300' 
-                        : 'text-zinc-400 group-hover:text-zinc-200'
+                    className={`h-4 w-4 transition-colors ${
+                      isActive ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'
                     }`}
                   />
-                  <span className="truncate">{item.label}</span>
+                  <span>{item.label}</span>
                 </div>
 
-                {item.badge && (
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-mono font-medium shrink-0 ml-1.5 ${
-                      isActive
-                        ? 'bg-[#4F46E5]/40 text-indigo-200 border border-indigo-500/40'
-                        : item.highlight
-                        ? 'bg-violet-950/70 text-violet-300 border border-violet-800/40'
-                        : 'bg-zinc-800 text-zinc-400'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {item.badge && (
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-mono font-medium ${
+                        isActive
+                          ? 'bg-indigo-500/30 text-indigo-200'
+                          : 'bg-zinc-800 text-zinc-400'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                  {isActive && <div className="h-1.5 w-1.5 rounded-full bg-indigo-400" />}
+                </div>
               </button>
             );
           })}
         </nav>
-      </div>
-
-      {/* Feature Focus Callout */}
-      <div className="rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-950/30 via-zinc-900/60 to-purple-950/20 p-3.5 text-xs">
-        <div className="flex items-center gap-2 text-indigo-400 font-semibold mb-1">
-          <Sparkles className="h-3.5 w-3.5 shrink-0" />
-          <span>Multi-Dept Constraint</span>
-        </div>
-        <p className="text-[11px] text-zinc-400 leading-relaxed">
-          Faculty mapped across multiple departments automatically locks parallel schedules across all campus blocks.
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderFooter = () => (
-    <div className="pt-4 border-t border-white/[0.06] space-y-3">
-      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-        <span>Active Context</span>
-        <span className="text-zinc-400 font-mono">v2.1-prod</span>
-      </div>
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-zinc-900/80 p-2.5 border border-white/[0.06]">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-7 w-7 rounded-lg bg-[#4F46E5]/20 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
-            {currentRole[0]}
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-xs font-medium text-zinc-200 truncate">
-              {currentRole === 'HEAD' && 'Institution Head'}
-              {currentRole === 'ADMIN' && 'Department Admin'}
-              {currentRole === 'FACULTY' && 'Faculty Member'}
-              {currentRole === 'SUPER_ADMIN' && 'SaaS Super Admin'}
-            </div>
-            <div className="text-[10px] text-zinc-400 truncate">
-              {currentRole === 'HEAD' && 'Full Academic Control'}
-              {currentRole === 'ADMIN' && 'Department Operations'}
-              {currentRole === 'FACULTY' && 'Teaching Schedule & Leaves'}
-              {currentRole === 'SUPER_ADMIN' && 'Platform-wide Governance'}
-            </div>
-          </div>
-        </div>
-
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 transition-colors shrink-0"
-            title="Log Out"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
     </div>
   );
 
   return (
     <>
-      {/* 1. Desktop Permanently Visible Sidebar */}
-      <aside className="hidden md:flex w-64 shrink-0 border-r border-white/[0.08] bg-[#0A0A0A]/95 p-4 flex-col justify-between overflow-y-auto">
-        {renderNavList()}
-        {renderFooter()}
-      </aside>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden animate-fade-in"
+          aria-hidden="true"
+        />
+      )}
 
-      {/* 2. Mobile Backdrop Overlay */}
-      <div
-        className={`fixed inset-0 z-50 bg-black/80 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
-          isMobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onCloseMobile}
-        aria-hidden="true"
-      />
-
-      {/* 3. Mobile Slide-in Drawer */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#0A0A0A] border-r border-white/[0.1] p-4 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-in-out md:hidden overflow-y-auto ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div>
-          {/* Mobile Header with Brand & Close Button */}
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08]">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] shadow-sm">
-                <Layers className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <span className="font-extrabold text-white text-sm font-mono block">NEXORG 2.1</span>
-                <span className="text-[9px] uppercase tracking-wider text-zinc-400">Navigation</span>
-              </div>
+      {/* Desktop Permanent Sidebar */}
+      <aside className="hidden md:flex h-[calc(100vh-4rem)] w-64 flex-col border-r border-white/[0.08] bg-[#0A0A0A]/95 p-4 shrink-0 overflow-y-auto">
+        <div className="flex-1 space-y-4">
+          {/* Active Role Card (No switching - purely informative) */}
+          <div className="p-3 rounded-xl bg-zinc-900/80 border border-white/[0.06] flex items-center justify-between">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Active Role</div>
+              <div className="text-xs font-bold text-white mt-0.5">{roleTitle}</div>
             </div>
-            <button
-              onClick={onCloseMobile}
-              className="p-2 rounded-xl text-zinc-400 hover:text-white bg-zinc-900 border border-white/[0.08] transition-colors"
-              aria-label="Close navigation sidebar"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+              currentRole === 'HEAD' 
+                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                : currentRole === 'ADMIN'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+            }`}>
+              {currentRole}
+            </span>
           </div>
 
           {renderNavList()}
         </div>
 
-        {renderFooter()}
+        {/* Footer Logout Action */}
+        {onLogout && (
+          <div className="pt-4 border-t border-white/[0.08]">
+            <button
+              onClick={onLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out Workspace</span>
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* Mobile Drawer Sidebar */}
+      <aside
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 flex-col border-r border-white/[0.08] bg-[#0A0A0A] p-4 flex md:hidden transition-transform duration-300 ease-in-out shadow-2xl ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white">
+              <Layers className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-extrabold text-white text-sm">NEXORG 2.1</span>
+              <div className="text-[10px] text-zinc-400">{roleTitle}</div>
+            </div>
+          </div>
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pt-4 space-y-4">
+          {renderNavList()}
+        </div>
+
+        {onLogout && (
+          <div className="pt-4 border-t border-white/[0.08]">
+            <button
+              onClick={onLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out Workspace</span>
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

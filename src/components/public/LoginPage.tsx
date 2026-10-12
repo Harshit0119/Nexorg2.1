@@ -308,15 +308,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 </button>
               </form>
 
-              {/* Quick Preset Accounts */}
+              {/* Quick Preset Demo Accounts */}
               <div className="pt-3 border-t border-white/[0.06] space-y-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 block text-center">
-                  Quick Role Logins:
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-400" />
+                    <span>Demo Sandbox Accounts:</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-500">DEMO-APEX</span>
+                </div>
                 <div className="space-y-1.5">
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin('HEAD', 'director@apex-tech.edu')}
+                    onClick={() => handleQuickLogin('HEAD', 'director@apex-tech.edu', 'DEMO-APEX')}
                     className="w-full p-2.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-left text-xs flex items-center justify-between text-zinc-300 border border-white/[0.04] transition-colors"
                   >
                     <span className="truncate">Director / HEAD Account</span>
@@ -324,7 +328,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin('ADMIN', 'priya.nair@apex-tech.edu')}
+                    onClick={() => handleQuickLogin('ADMIN', 'priya.nair@apex-tech.edu', 'DEMO-APEX')}
                     className="w-full p-2.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-left text-xs flex items-center justify-between text-zinc-300 border border-white/[0.04] transition-colors"
                   >
                     <span className="truncate">Department Admin (HoD)</span>
@@ -332,7 +336,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleQuickLogin('FACULTY', 'rahul.sharma@apex-tech.edu')}
+                    onClick={() => handleQuickLogin('FACULTY', 'rahul.sharma@apex-tech.edu', 'DEMO-APEX')}
                     className="w-full p-2.5 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-left text-xs flex items-center justify-between text-zinc-300 border border-white/[0.04] transition-colors"
                   >
                     <span className="truncate">Faculty Member</span>

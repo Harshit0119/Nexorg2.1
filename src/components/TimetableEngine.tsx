@@ -149,8 +149,27 @@ export const TimetableEngine: React.FC<TimetableEngineProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [engineNotice, setEngineNotice] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  // Active timetable data
-  const currentTimetable = timetables.find((t) => t.id === selectedTimetableId) || timetables[0];
+  // Active timetable data (with safe fallback)
+  const currentTimetable: Timetable = useMemo(() => {
+    return (
+      timetables.find((t) => t.id === selectedTimetableId) ||
+      timetables[0] || {
+        id: 'tt-fallback',
+        institute_id: 'inst-001',
+        name: 'Master Timetable',
+        academic_year: '2025-2026',
+        term: 'ODD',
+        status: 'DRAFT',
+        health_score: 100,
+        total_slots: 0,
+        conflicts_count: 0,
+        generation_strategy: 'CSP_BACKTRACKING',
+        created_by: 'system',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    );
+  }, [timetables, selectedTimetableId]);
 
   // Active working days & periods
   const activeWorkingDays = useMemo(

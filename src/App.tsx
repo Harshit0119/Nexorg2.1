@@ -23,6 +23,11 @@ import { SaasAdminDashboard } from './components/SaasAdminDashboard';
 import { SettingsManager } from './components/SettingsManager';
 import { ExportModal } from './components/ExportModal';
 import { LeaveManagement } from './components/LeaveManagement';
+import { OnboardingGuide } from './components/OnboardingGuide';
+import { FacultyPersonalDashboard, FacultyTab } from './components/FacultyPersonalDashboard';
+import { fetchTenantAcademicData, saveTenantToLocalStorage, TenantDataset } from './services/tenantDataService';
+import { DEMO_INSTITUTE, DEMO_INSTITUTE_ID, isDemoInstitute } from './services/demoData';
+import { Sparkles } from 'lucide-react';
 
 // Public Pages
 import { PublicNavbar, PublicPage } from './components/public/PublicNavbar';
@@ -34,40 +39,7 @@ import { ContactPage } from './components/public/ContactPage';
 import { LoginPage } from './components/public/LoginPage';
 import { RegisterPage } from './components/public/RegisterPage';
 
-import {
-  INITIAL_INSTITUTE,
-  INITIAL_DEPARTMENTS,
-  INITIAL_USERS,
-  INITIAL_FACULTY_PROFILES,
-  INITIAL_FACULTY_DEPT_ASSIGNMENTS,
-  INITIAL_SUBJECTS,
-  INITIAL_ROOMS,
-  INITIAL_LABS,
-  INITIAL_WORKLOAD_ALLOCATIONS,
-  INITIAL_TIMETABLE_SLOTS,
-  INITIAL_FACULTY_AVAILABILITY,
-  INITIAL_INVITATIONS,
-  INITIAL_COURSES,
-  INITIAL_SEMESTERS,
-  INITIAL_SECTIONS,
-  INITIAL_SECTION_SUBJECTS,
-  INITIAL_FACULTY_SUBJECT_ASSIGNMENTS,
-  INITIAL_WORKING_DAYS,
-  INITIAL_TIME_SLOTS,
-  INITIAL_UNAVAILABLE_SLOTS,
-  INITIAL_WORKLOAD_RULES,
-  INITIAL_WORKLOAD_LIMITS,
-  INITIAL_TIMING_CONFIG,
-  INITIAL_TIMETABLES,
-  INITIAL_TIMETABLE_ENTRIES,
-  INITIAL_TIMETABLE_CONFLICTS,
-  INITIAL_LEAVE_TYPES,
-  INITIAL_LEAVE_BALANCES,
-  INITIAL_FACULTY_LEAVES,
-  INITIAL_SUBSTITUTE_ASSIGNMENTS,
-  INITIAL_LEAVE_NOTIFICATIONS,
-  INITIAL_LEAVE_AUDIT_LOGS,
-} from './services/academicData';
+// Multi-Tenant Clean Architecture: No hardcoded seeded mock datasets in production App
 import {
   Institute,
   Department,
@@ -138,54 +110,81 @@ export default function App() {
   const [publicPage, setPublicPage] = useState<PublicPage>('home');
 
   // Dashboard Navigation & Role State
-  const [activeTab, setActiveTab] = useState<NavTab>('overview');
+  const [activeTab, setActiveTab] = useState<NavTab>('institute');
   const [currentRole, setCurrentRole] = useState<UserRole>('HEAD');
 
   // Mobile Navigation Drawer & Persistence Loading State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDepartmentsLoading, setIsDepartmentsLoading] = useState(false);
 
-  // Academic Resource Domain State
-  const [institute, setInstitute] = useState<Institute>(INITIAL_INSTITUTE);
-  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
-  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
-  const [semesters, setSemesters] = useState<Semester[]>(INITIAL_SEMESTERS);
-  const [sections, setSections] = useState<Section[]>(INITIAL_SECTIONS);
-  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
-  const [sectionSubjects, setSectionSubjects] = useState<SectionSubject[]>(INITIAL_SECTION_SUBJECTS);
-  const [facultySubjectAssignments, setFacultySubjectAssignments] = useState<FacultySubjectAssignment[]>(
-    INITIAL_FACULTY_SUBJECT_ASSIGNMENTS
-  );
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [facultyProfiles, setFacultyProfiles] = useState<FacultyProfile[]>(INITIAL_FACULTY_PROFILES);
-  const [assignments, setAssignments] = useState<FacultyDepartmentAssignment[]>(
-    INITIAL_FACULTY_DEPT_ASSIGNMENTS
-  );
-  const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
-  const [labs, setLabs] = useState<Lab[]>(INITIAL_LABS);
-  const [workloads, setWorkloads] = useState<WorkloadAllocation[]>(INITIAL_WORKLOAD_ALLOCATIONS);
-  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>(INITIAL_TIMETABLE_SLOTS);
-  const [availabilities, setAvailabilities] = useState<FacultyAvailability[]>(
-    INITIAL_FACULTY_AVAILABILITY
-  );
-  const [invitations, setInvitations] = useState<InstituteInvitation[]>(INITIAL_INVITATIONS);
-  const [workingDays, setWorkingDays] = useState<InstituteWorkingDay[]>(INITIAL_WORKING_DAYS);
-  const [timeSlots, setTimeSlots] = useState<InstituteTimeSlot[]>(INITIAL_TIME_SLOTS);
-  const [unavailableSlots, setUnavailableSlots] = useState<FacultyUnavailableSlot[]>(INITIAL_UNAVAILABLE_SLOTS);
-  const [workloadRules, setWorkloadRules] = useState<WorkloadRule[]>(INITIAL_WORKLOAD_RULES);
-  const [workloadLimits, setWorkloadLimits] = useState<WorkloadLimit[]>(INITIAL_WORKLOAD_LIMITS);
-  const [timingConfig, setTimingConfig] = useState<InstituteTimingConfig>(INITIAL_TIMING_CONFIG);
-  const [timetables, setTimetables] = useState<Timetable[]>(INITIAL_TIMETABLES);
-  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>(INITIAL_TIMETABLE_ENTRIES);
-  const [timetableConflicts, setTimetableConflicts] = useState<TimetableConflict[]>(INITIAL_TIMETABLE_CONFLICTS);
+  // Academic Resource Domain State (Clean empty collections for new institutes)
+  const [institute, setInstitute] = useState<Institute>({
+    id: 'inst-new',
+    name: 'New Educational Institute',
+    code: 'UNIV',
+    institute_type: 'TECHNOLOGY_INSTITUTE',
+    academic_year: '2025-2026',
+    timezone: 'Asia/Kolkata (UTC+05:30)',
+    address: 'Academic Campus',
+    website: 'https://univ.edu',
+    subscription_tier: 'STARTER',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [sectionSubjects, setSectionSubjects] = useState<SectionSubject[]>([]);
+  const [facultySubjectAssignments, setFacultySubjectAssignments] = useState<FacultySubjectAssignment[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [facultyProfiles, setFacultyProfiles] = useState<FacultyProfile[]>([]);
+  const [assignments, setAssignments] = useState<FacultyDepartmentAssignment[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [workloads, setWorkloads] = useState<WorkloadAllocation[]>([]);
+  const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
+  const [availabilities, setAvailabilities] = useState<FacultyAvailability[]>([]);
+  const [invitations, setInvitations] = useState<InstituteInvitation[]>([]);
+  const [workingDays, setWorkingDays] = useState<InstituteWorkingDay[]>([
+    { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+    { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+    { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+    { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+    { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+    { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
+  ]);
+  const [timeSlots, setTimeSlots] = useState<InstituteTimeSlot[]>([
+    { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
+    { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
+    { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
+    { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
+    { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
+    { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
+  ]);
+  const [unavailableSlots, setUnavailableSlots] = useState<FacultyUnavailableSlot[]>([]);
+  const [workloadRules, setWorkloadRules] = useState<WorkloadRule[]>([]);
+  const [workloadLimits, setWorkloadLimits] = useState<WorkloadLimit[]>([]);
+  const [timingConfig, setTimingConfig] = useState<InstituteTimingConfig>({
+    institute_id: 'inst-new',
+    period_duration_minutes: 60,
+    break_duration_minutes: 15,
+    lunch_start_time: '13:15',
+    lunch_end_time: '14:00',
+    max_daily_slots: 6,
+  });
+  const [timetables, setTimetables] = useState<Timetable[]>([]);
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
+  const [timetableConflicts, setTimetableConflicts] = useState<TimetableConflict[]>([]);
 
   // Leave Management & Substitution State
-  const [leaves, setLeaves] = useState<FacultyLeave[]>(INITIAL_FACULTY_LEAVES);
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>(INITIAL_LEAVE_TYPES);
-  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>(INITIAL_LEAVE_BALANCES);
-  const [substitutes, setSubstitutes] = useState<SubstituteAssignment[]>(INITIAL_SUBSTITUTE_ASSIGNMENTS);
-  const [leaveNotifications, setLeaveNotifications] = useState<LeaveNotification[]>(INITIAL_LEAVE_NOTIFICATIONS);
-  const [leaveAuditLogs, setLeaveAuditLogs] = useState<LeaveAuditLog[]>(INITIAL_LEAVE_AUDIT_LOGS);
+  const [leaves, setLeaves] = useState<FacultyLeave[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+  const [substitutes, setSubstitutes] = useState<SubstituteAssignment[]>([]);
+  const [leaveNotifications, setLeaveNotifications] = useState<LeaveNotification[]>([]);
+  const [leaveAuditLogs, setLeaveAuditLogs] = useState<LeaveAuditLog[]>([]);
 
 
   // Production SaaS Layer State
@@ -362,39 +361,68 @@ export default function App() {
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
-  // Synchronize active tenant & departments on page load
+  // Centralized state applicator for real-time consistency
+  const applyTenantDataset = (data: TenantDataset) => {
+    setInstitute(data.institute);
+    setDepartments(data.departments);
+    setCourses(data.courses);
+    setSemesters(data.semesters);
+    setSections(data.sections);
+    setSubjects(data.subjects);
+    setSectionSubjects(data.sectionSubjects);
+    setFacultySubjectAssignments(data.facultySubjectAssignments);
+    setUsers(data.users);
+    setFacultyProfiles(data.facultyProfiles);
+    setAssignments(data.assignments);
+    setRooms(data.rooms);
+    setLabs(data.labs);
+    setWorkloads(data.workloads);
+    setTimetableSlots(data.timetableSlots);
+    setAvailabilities(data.availabilities);
+    setInvitations(data.invitations);
+    setWorkingDays(data.workingDays);
+    setTimeSlots(data.timeSlots);
+    setUnavailableSlots(data.unavailableSlots);
+    setWorkloadRules(data.workloadRules);
+    setWorkloadLimits(data.workloadLimits);
+    setTimingConfig(data.timingConfig);
+    setTimetables(data.timetables);
+    setTimetableEntries(data.timetableEntries);
+    setTimetableConflicts(data.timetableConflicts);
+    setLeaves(data.leaves);
+    setLeaveTypes(data.leaveTypes);
+    setLeaveBalances(data.leaveBalances);
+    setSubstitutes(data.substitutes);
+    setLeaveNotifications(data.leaveNotifications);
+    setLeaveAuditLogs(data.leaveAuditLogs);
+  };
+
+  // Synchronize active tenant on page load with strict multi-tenant isolation
   useEffect(() => {
     let isMounted = true;
     async function initTenantData() {
       setIsDepartmentsLoading(true);
       try {
         const session = getActiveSession();
+        let targetInst = institute;
         if (session && session.institute) {
-          if (isMounted) {
-            setInstitute(session.institute);
-            if (session.role) setCurrentRole(session.role);
-            if (session.user) setUsers([session.user]);
-          }
-          const deptRes = await fetchDepartments(session.institute.id);
-          if (isMounted && deptRes.success) {
-            setDepartments(deptRes.data);
-          }
-        } else {
-          // Sync default institute departments
-          const deptRes = await fetchDepartments(institute.id);
-          if (isMounted && deptRes.success && deptRes.data.length > 0) {
-            setDepartments(deptRes.data);
-          } else {
-            // Seed database for default institute
-            const defaultCodes = ['CSE', 'IT', 'EC'];
-            const batchRes = await batchProvisionDepartments(institute.id, defaultCodes);
-            if (isMounted && batchRes.success && batchRes.data.length > 0) {
-              setDepartments(batchRes.data);
-            }
+          targetInst = session.institute;
+          if (session.role) setCurrentRole(session.role);
+          if (session.user) setUsers([session.user]);
+        }
+
+        const data = await fetchTenantAcademicData(targetInst);
+        if (isMounted) {
+          applyTenantDataset(data);
+          if (session?.role) {
+            setCurrentRole(session.role);
+            if (session.role === 'HEAD') setActiveTab('institute');
+            else if (session.role === 'ADMIN') setActiveTab('faculty');
+            else setActiveTab('my-timetable');
           }
         }
       } catch (err) {
-        console.error('Failed to initialize tenant departments:', err);
+        console.error('Failed to initialize tenant data:', err);
       } finally {
         if (isMounted) setIsDepartmentsLoading(false);
       }
@@ -405,6 +433,143 @@ export default function App() {
       isMounted = false;
     };
   }, []);
+
+  // Strict Role-Based Dashboard Navigation Boundary Enforcement
+  useEffect(() => {
+    if (currentRole === 'HEAD') {
+      const validHeadTabs: NavTab[] = [
+        'institute',
+        'departments',
+        'faculty',
+        'subjects',
+        'rooms-labs',
+        'timetable',
+        'leaves',
+        'analytics',
+        'settings',
+      ];
+      if (!validHeadTabs.includes(activeTab)) {
+        setActiveTab('institute');
+      }
+    } else if (currentRole === 'ADMIN') {
+      const validAdminTabs: NavTab[] = [
+        'faculty',
+        'subjects',
+        'timetable',
+        'rooms',
+        'labs',
+        'leaves',
+      ];
+      if (!validAdminTabs.includes(activeTab)) {
+        setActiveTab('faculty');
+      }
+    } else if (currentRole === 'FACULTY') {
+      const validFacultyTabs: NavTab[] = [
+        'my-subjects',
+        'my-classes',
+        'my-timetable',
+        'free-slots',
+        'leave-requests',
+        'student-lists',
+        'quick-attendance',
+        'announcements',
+        'profile',
+      ];
+      if (!validFacultyTabs.includes(activeTab)) {
+        setActiveTab('my-timetable');
+      }
+    }
+  }, [currentRole, activeTab]);
+
+  // Real-Time Multi-Tenant Data Consistency & Centralized Persistence
+  useEffect(() => {
+    if (!institute || !institute.id || isDepartmentsLoading) return;
+    saveTenantToLocalStorage(institute.id, {
+      institute,
+      departments,
+      courses,
+      semesters,
+      sections,
+      subjects,
+      sectionSubjects,
+      facultySubjectAssignments,
+      users,
+      facultyProfiles,
+      assignments,
+      rooms,
+      labs,
+      workloads,
+      timetableSlots,
+      availabilities,
+      invitations,
+      workingDays,
+      timeSlots,
+      unavailableSlots,
+      workloadRules,
+      workloadLimits,
+      timingConfig,
+      timetables,
+      timetableEntries,
+      timetableConflicts,
+      leaves,
+      leaveTypes,
+      leaveBalances,
+      substitutes,
+      leaveNotifications,
+      leaveAuditLogs,
+    });
+  }, [
+    institute,
+    departments,
+    courses,
+    semesters,
+    sections,
+    subjects,
+    sectionSubjects,
+    facultySubjectAssignments,
+    users,
+    facultyProfiles,
+    assignments,
+    rooms,
+    labs,
+    workloads,
+    timetableSlots,
+    availabilities,
+    invitations,
+    workingDays,
+    timeSlots,
+    unavailableSlots,
+    workloadRules,
+    workloadLimits,
+    timingConfig,
+    timetables,
+    timetableEntries,
+    timetableConflicts,
+    leaves,
+    leaveTypes,
+    leaveBalances,
+    substitutes,
+    leaveNotifications,
+    leaveAuditLogs,
+    isDepartmentsLoading,
+  ]);
+
+  const handleSwitchToDemo = async () => {
+    setIsDepartmentsLoading(true);
+    try {
+      const demoData = await fetchTenantAcademicData(DEMO_INSTITUTE);
+      applyTenantDataset(demoData);
+      setCurrentRole('HEAD');
+      setActiveTab('institute');
+      saveActiveSession({
+        institute: DEMO_INSTITUTE,
+        user: demoData.users[0],
+        role: 'HEAD',
+      });
+    } finally {
+      setIsDepartmentsLoading(false);
+    }
+  };
 
   // Handlers for SaaS Layer
   const handleUpdateSubscription = (updated: Subscription) => {
@@ -1088,47 +1253,41 @@ export default function App() {
   // 20. Public Registration Success (Persists Institute & Departments to Database)
   const handleRegisterSuccess = async (
     newInst: Partial<Institute>,
-    initialDepts: string[],
+    initialDepts: string[] = [],
     adminUser?: { name: string; email: string }
   ) => {
     setIsDepartmentsLoading(true);
     try {
-      // 1. Save institute to database and multi-tenant persistence
+      const instCode = (newInst.code || 'UNIV').toUpperCase().trim();
+      const instName = newInst.name || 'New Educational Institute';
+
       const instResult = await saveInstitute({
-        name: newInst.name || 'Educational Institution',
-        code: newInst.code || 'INST-01',
+        name: instName,
+        code: instCode,
         academic_year: newInst.academic_year || '2025-2026',
       });
 
       const savedInst = instResult.data || ({
-        ...INITIAL_INSTITUTE,
-        ...newInst,
-        id: `inst-${(newInst.code || 'inst').toLowerCase()}-${Date.now().toString(36)}`,
+        id: `inst-${instCode.toLowerCase()}-${Date.now().toString(36)}`,
+        name: instName,
+        code: instCode,
+        institute_type: 'TECHNOLOGY_INSTITUTE',
+        academic_year: newInst.academic_year || '2025-2026',
+        timezone: newInst.timezone || 'Asia/Kolkata (UTC+05:30)',
+        address: newInst.address || 'Academic Campus',
+        website: newInst.website || `https://${instCode.toLowerCase()}.edu`,
+        subscription_tier: 'STARTER',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       } as Institute);
 
-      setInstitute(savedInst);
+      // Provision optional departments if user specified any
+      let createdDepts: Department[] = [];
+      if (initialDepts && initialDepts.length > 0) {
+        const deptResult = await batchProvisionDepartments(savedInst.id, initialDepts);
+        createdDepts = deptResult.data || [];
+      }
 
-      // 2. Batch provision the user-selected departments (e.g. CSE, IT, EC) for this institute_id
-      const deptResult = await batchProvisionDepartments(savedInst.id, initialDepts);
-      const savedDepts = deptResult.data;
-      setDepartments(savedDepts);
-
-      // 3. Clear demo data from previous institutes to maintain tenant isolation
-      setCourses([]);
-      setSemesters([]);
-      setSections([]);
-      setSubjects([]);
-      setFacultySubjectAssignments([]);
-      setAssignments([]);
-      setRooms([]);
-      setLabs([]);
-      setWorkloads([]);
-      setTimetables([]);
-      setTimetableEntries([]);
-      setTimetableConflicts([]);
-      setFacultyProfiles([]);
-
-      // 4. Create user & active session
       const userObj: User = {
         id: `user-${Date.now().toString(36)}`,
         institute_id: savedInst.id,
@@ -1139,7 +1298,66 @@ export default function App() {
         is_active: true,
         created_at: new Date().toISOString(),
       };
-      setUsers([userObj]);
+
+      // Real new institute starts completely clean and empty (no preloaded faculty, subjects, or timetables)
+      const emptyDataset: TenantDataset = {
+        institute: savedInst,
+        departments: createdDepts,
+        courses: [],
+        semesters: [],
+        sections: [],
+        subjects: [],
+        sectionSubjects: [],
+        facultySubjectAssignments: [],
+        users: [userObj],
+        facultyProfiles: [],
+        assignments: [],
+        rooms: [],
+        labs: [],
+        workloads: [],
+        timetableSlots: [],
+        availabilities: [],
+        invitations: [],
+        workingDays: [
+          { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
+          { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
+        ],
+        timeSlots: [
+          { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
+          { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
+          { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
+          { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
+          { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
+          { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
+        ],
+        unavailableSlots: [],
+        workloadRules: [],
+        workloadLimits: [],
+        timingConfig: {
+          institute_id: savedInst.id,
+          period_duration_minutes: 60,
+          break_duration_minutes: 15,
+          lunch_start_time: '13:15',
+          lunch_end_time: '14:00',
+          max_daily_slots: 6,
+        },
+        timetables: [],
+        timetableEntries: [],
+        timetableConflicts: [],
+        leaves: [],
+        leaveTypes: [],
+        leaveBalances: [],
+        substitutes: [],
+        leaveNotifications: [],
+        leaveAuditLogs: [],
+      };
+
+      applyTenantDataset(emptyDataset);
+      saveTenantToLocalStorage(savedInst.id, emptyDataset);
 
       saveActiveSession({
         institute: savedInst,
@@ -1149,7 +1367,7 @@ export default function App() {
 
       setCurrentRole('HEAD');
       setViewMode('dashboard');
-      setActiveTab('overview');
+      setActiveTab('institute');
     } catch (err) {
       console.error('Registration failed:', err);
     } finally {
@@ -1157,38 +1375,72 @@ export default function App() {
     }
   };
 
-  // 21. Login Success (Authenticates & Fetches Tenant Departments from Database)
+  // 21. Login Success (Authenticates & Fetches Tenant Data from Database)
   const handleLoginSuccess = async (selectedRole: UserRole, instituteCode?: string, userEmail?: string) => {
     setIsDepartmentsLoading(true);
     try {
-      const code = instituteCode || institute.code;
+      const code = (instituteCode || institute.code).toUpperCase().trim();
       const mail = userEmail || 'director@apex-tech.edu';
 
-      const authRes = await authenticateTenantUser(code, mail, selectedRole);
-      if (authRes.success && authRes.institute) {
-        setInstitute(authRes.institute);
-        if (authRes.user) setUsers([authRes.user]);
+      if (code === 'DEMO-APEX' || code === 'INST-DEMO-APEX' || isDemoInstitute(code)) {
+        // Load isolated demo environment
+        const demoData = await fetchTenantAcademicData(DEMO_INSTITUTE);
+        applyTenantDataset(demoData);
+        const activeUser = demoData.users.find((u) => u.role === selectedRole) || demoData.users[0];
+        setUsers([activeUser]);
 
-        // Fetch departments for this specific institute_id from database
-        const deptRes = await fetchDepartments(authRes.institute.id);
-        if (deptRes.success) {
-          setDepartments(deptRes.data);
-        }
+        saveActiveSession({
+          institute: DEMO_INSTITUTE,
+          user: activeUser,
+          role: selectedRole,
+        });
       } else {
-        const deptRes = await fetchDepartments(institute.id);
-        if (deptRes.success) {
-          setDepartments(deptRes.data);
-        }
+        const authRes = await authenticateTenantUser(code, mail, selectedRole);
+        const inst = authRes.institute || {
+          id: `inst-${code.toLowerCase()}-${Date.now().toString(36)}`,
+          name: `${code} Educational Institution`,
+          code: code,
+          academic_year: '2025-2026',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const tenantData = await fetchTenantAcademicData(inst);
+        applyTenantDataset(tenantData);
+
+        const activeUser = authRes.user || {
+          id: `usr-${Date.now()}`,
+          institute_id: inst.id,
+          email: mail,
+          full_name: selectedRole === 'HEAD' ? 'Institutional Director' : selectedRole === 'ADMIN' ? 'Department Admin' : 'Academic Faculty',
+          role: selectedRole,
+          created_at: new Date().toISOString(),
+        };
+        setUsers([activeUser]);
+
+        saveActiveSession({
+          institute: inst,
+          user: activeUser,
+          role: selectedRole,
+        });
       }
 
       setCurrentRole(selectedRole);
       setViewMode('dashboard');
-      setActiveTab('overview');
+      if (selectedRole === 'HEAD') {
+        setActiveTab('institute');
+      } else if (selectedRole === 'ADMIN') {
+        setActiveTab('faculty');
+      } else {
+        setActiveTab('my-timetable');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setCurrentRole(selectedRole);
       setViewMode('dashboard');
-      setActiveTab('overview');
+      if (selectedRole === 'HEAD') setActiveTab('institute');
+      else if (selectedRole === 'ADMIN') setActiveTab('faculty');
+      else setActiveTab('my-timetable');
     } finally {
       setIsDepartmentsLoading(false);
     }
@@ -1537,26 +1789,52 @@ export default function App() {
     );
   }
 
+  // Determine assigned department for department-level admin
+  const userAssignedDeptId = departments[0]?.id || '';
+  const activeFacultyProfile =
+    facultyProfiles.find((f) => f.user_id === users[0]?.id) || facultyProfiles[0];
+
   // =========================================================================
   // VIEW MODE: INTERNAL ACADEMIC RESOURCE PLANNING DASHBOARD
   // =========================================================================
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#F8FAFC] flex flex-col font-sans">
-      {/* Top Navbar */}
+      {/* Top Navbar (Role Switching Removed) */}
       <Navbar
         currentRole={currentRole}
-        onRoleChange={setCurrentRole}
         instituteName={institute.name}
         academicYear={institute.academic_year}
         isLiveSupabase={isSupabaseConfigured}
-        onOpenSupabaseConfig={() => setActiveTab('supabase')}
+        isDemoEnvironment={isDemoInstitute(institute.id)}
+        onOpenSupabaseConfig={() => {}}
         activeClashesCount={timetableConflicts.filter((c) => c.status === 'UNRESOLVED').length}
         unreadNotificationsCount={notifications.filter((n) => !n.is_read).length}
-        onOpenNotifications={() => setActiveTab('notifications')}
+        onOpenNotifications={() => {}}
         onGoToPublicWebsite={() => setViewMode('public')}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         onLogout={handleLogout}
       />
+
+      {/* Demo Sandbox Top Notice */}
+      {isDemoInstitute(institute.id) && (
+        <div className="bg-amber-950/60 border-b border-amber-500/30 px-3 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-200">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Demo Sandbox Environment (Apex Institute):</strong> Sample multi-department faculty, rooms, and clash-free timetable loaded. Any changes are kept completely separate from real institute tenants.
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setViewMode('public');
+              setPublicPage('register');
+            }}
+            className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold border border-amber-500/40 text-xs shrink-0 self-start sm:self-auto"
+          >
+            Create Real Institute Workspace &rarr;
+          </button>
+        </div>
+      )}
 
       {/* Main Body */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -1567,7 +1845,6 @@ export default function App() {
           currentRole={currentRole}
           facultyCount={facultyProfiles.length}
           deptCount={departments.length}
-          invitationsCount={invitations.filter((i) => i.status === 'PENDING').length}
           pendingLeavesCount={leaves.filter((l) => l.status === 'PENDING').length}
           isMobileOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -1578,291 +1855,380 @@ export default function App() {
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 w-full min-w-0">
           <ErrorBoundary fallbackTitle="Nexorg SaaS Module Guard">
             <div className="max-w-7xl mx-auto w-full">
-            {activeTab === 'overview' && (
-              <OverviewDashboard
-                departments={departments}
-                facultyProfiles={facultyProfiles}
-                users={users}
-                assignments={assignments}
-                subjects={subjects}
-                rooms={rooms}
-                labs={labs}
-                workloads={workloads}
-                onNavigate={setActiveTab}
-                currentRole={currentRole}
-              />
-            )}
 
-            {activeTab === 'departments' && (
-              <DepartmentManagement
-                departments={departments}
-                assignments={assignments}
-                subjects={subjects}
-                users={users}
-                onAddDepartment={handleAddDepartment}
-                onUpdateDepartment={handleUpdateDepartment}
-                onDeleteDepartment={handleDeleteDepartment}
-                currentRole={currentRole}
-                isLoading={isDepartmentsLoading}
-              />
-            )}
-
-            {activeTab === 'team-invitations' && (
-              <TeamInvitations
-                users={users}
-                departments={departments}
-                facultyProfiles={facultyProfiles}
-                assignments={assignments}
-                invitations={invitations}
-                onSendInvitation={handleSendInvitation}
-                onRevokeInvitation={handleRevokeInvitation}
-                onResendInvitation={handleResendInvitation}
-                onSimulateAcceptInvitation={handleSimulateAcceptInvitation}
-                currentRole={currentRole}
-              />
-            )}
-
-            {activeTab === 'institute' && (
-              <InstituteOnboarding
-                institute={institute}
-                onUpdateInstitute={handleUpdateInstitute}
-              />
-            )}
-
-            {activeTab === 'institute-setup' && (
-              <InstituteSetupWizard
-                onComplete={handleCompleteSetupWizard}
-              />
-            )}
-
-            {activeTab === 'faculty' && (
-              <FacultyManagement
-                facultyProfiles={facultyProfiles}
-                users={users}
-                departments={departments}
-                assignments={assignments}
-                workloads={workloads}
-                subjects={subjects}
-                availabilities={availabilities}
-                onAddAssignment={handleAddAssignment}
-                onRemoveAssignment={handleRemoveAssignment}
-                onAddFaculty={handleAddFaculty}
-                onUpdateFacultyProfile={handleUpdateFacultyProfile}
-                onAssignSubject={handleAllocateFaculty}
-                onRemoveWorkloadAllocation={handleRemoveWorkloadAllocation}
-                onAddAvailability={handleAddAvailability}
-                onRemoveAvailability={handleRemoveAvailability}
-                currentRole={currentRole}
-                userAssignedDeptId={departments[0]?.id}
-              />
-            )}
-
-            {activeTab === 'subjects' && (
-              <SubjectAllocation
-                subjects={subjects}
-                departments={departments}
-                courses={courses}
-                semesters={semesters}
-                sections={sections}
-                sectionSubjects={sectionSubjects}
-                facultySubjectAssignments={facultySubjectAssignments}
-                facultyProfiles={facultyProfiles}
-                users={users}
-                workloads={workloads}
-                onAddSubject={handleAddSubject}
-                onUpdateSubject={handleUpdateSubject}
-                onDeleteSubject={handleDeleteSubject}
-                onAddCourse={handleAddCourse}
-                onUpdateCourse={handleUpdateCourse}
-                onDeleteCourse={handleDeleteCourse}
-                onAddSemester={handleAddSemester}
-                onUpdateSemester={handleUpdateSemester}
-                onArchiveSemester={handleArchiveSemester}
-                onAddSection={handleAddSection}
-                onUpdateSection={handleUpdateSection}
-                onDeleteSection={handleDeleteSection}
-                onAssignFacultyToSection={handleAssignFacultyToSection}
-                onRemoveFacultySubjectAssignment={handleRemoveFacultySubjectAssignment}
-                currentRole={currentRole}
-                userAssignedDeptId={departments[0]?.id}
-              />
-            )}
-
-            {activeTab === 'availability' && (
-              <AvailabilityTracking
-                facultyProfiles={facultyProfiles}
-                users={users}
-                departments={departments}
-                workloads={workloads}
-                subjects={subjects}
-                availabilities={availabilities}
-                workingDays={workingDays}
-                timeSlots={timeSlots}
-                unavailableSlots={unavailableSlots}
-                workloadRules={workloadRules}
-                workloadLimits={workloadLimits}
-                timingConfig={timingConfig}
-                onAddAvailability={handleAddAvailability}
-                onRemoveAvailability={handleRemoveAvailability}
-                onUpdateWorkingDays={handleUpdateWorkingDays}
-                onUpdateTimeSlots={handleUpdateTimeSlots}
-                onAddTimeSlot={handleAddSingleTimeSlot}
-                onUpdateSingleTimeSlot={handleUpdateSingleTimeSlot}
-                onDeleteTimeSlot={handleDeleteSingleTimeSlot}
-                onAddUnavailableSlot={handleAddUnavailableSlot}
-                onRemoveUnavailableSlot={handleRemoveUnavailableSlot}
-                onMarkDayUnavailable={handleMarkDayUnavailable}
-                onClearDayUnavailable={handleClearDayUnavailable}
-                onAddWorkloadRule={handleAddWorkloadRule}
-                onUpdateWorkloadRule={handleUpdateWorkloadRule}
-                onDeleteWorkloadRule={handleDeleteWorkloadRule}
-                onUpdateWorkloadLimit={handleUpdateWorkloadLimit}
-                onUpdateTimingConfig={handleUpdateTimingConfig}
-                currentRole={currentRole}
-                userAssignedDeptId={departments[0]?.id}
-              />
-            )}
-
-            {activeTab === 'workload' && (
-              <WorkloadBalancing
-                facultyProfiles={facultyProfiles}
-                users={users}
-                departments={departments}
-                workloads={workloads}
-                subjects={subjects}
-              />
-            )}
-
-            {activeTab === 'leaves' && (
-              <LeaveManagement
-                currentRole={currentRole}
-                instituteId={institute.id}
+            {/* ------------------------------------------------------------- */}
+            {/* ROLE: FACULTY - Personal Academic Dashboard Only               */}
+            {/* ------------------------------------------------------------- */}
+            {currentRole === 'FACULTY' && (
+              <FacultyPersonalDashboard
+                activeTab={activeTab as FacultyTab}
+                onSelectTab={(t) => setActiveTab(t)}
+                facultyProfile={activeFacultyProfile}
                 currentUser={users[0]}
-                facultyProfiles={facultyProfiles}
-                users={users}
                 departments={departments}
                 subjects={subjects}
-                rooms={rooms}
-                labs={labs}
                 sections={sections}
+                courses={courses}
                 timeSlots={timeSlots}
-                deptAssignments={assignments}
-                unavailableSlots={unavailableSlots}
-                workloads={workloads}
+                workingDays={workingDays}
                 timetableEntries={timetableEntries}
                 leaves={leaves}
                 leaveTypes={leaveTypes}
                 leaveBalances={leaveBalances}
                 substitutes={substitutes}
-                notifications={leaveNotifications}
-                auditLogs={leaveAuditLogs}
                 onApplyLeave={handleApplyLeave}
-                onApproveLeave={handleApproveLeave}
-                onRejectLeave={handleRejectLeave}
-                onCancelLeave={handleCancelLeave}
-                onAssignSubstitute={handleAssignSubstitute}
-                onCreateLeaveType={handleCreateLeaveType}
+                onUpdateProfile={handleUpdateFacultyProfile}
               />
             )}
 
-            {activeTab === 'rooms-labs' && (
-              <RoomLabManagement
-                rooms={rooms}
-                labs={labs}
-                departments={departments}
-                onAddRoom={handleAddRoom}
-                onAddLab={handleAddLab}
-                currentRole={currentRole}
-              />
+            {/* ------------------------------------------------------------- */}
+            {/* ROLE: ADMIN - Department-Level Access Only                     */}
+            {/* ------------------------------------------------------------- */}
+            {currentRole === 'ADMIN' && (
+              <>
+                {activeTab === 'faculty' && (
+                  <FacultyManagement
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    departments={departments}
+                    assignments={assignments}
+                    workloads={workloads}
+                    subjects={subjects}
+                    availabilities={availabilities}
+                    onAddAssignment={handleAddAssignment}
+                    onRemoveAssignment={handleRemoveAssignment}
+                    onAddFaculty={handleAddFaculty}
+                    onUpdateFacultyProfile={handleUpdateFacultyProfile}
+                    onAssignSubject={handleAllocateFaculty}
+                    onRemoveWorkloadAllocation={handleRemoveWorkloadAllocation}
+                    onAddAvailability={handleAddAvailability}
+                    onRemoveAvailability={handleRemoveAvailability}
+                    currentRole="ADMIN"
+                    userAssignedDeptId={userAssignedDeptId}
+                  />
+                )}
+
+                {activeTab === 'subjects' && (
+                  <SubjectAllocation
+                    subjects={subjects}
+                    departments={departments}
+                    courses={courses}
+                    semesters={semesters}
+                    sections={sections}
+                    sectionSubjects={sectionSubjects}
+                    facultySubjectAssignments={facultySubjectAssignments}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    workloads={workloads}
+                    onAddSubject={handleAddSubject}
+                    onUpdateSubject={handleUpdateSubject}
+                    onDeleteSubject={handleDeleteSubject}
+                    onAddCourse={handleAddCourse}
+                    onUpdateCourse={handleUpdateCourse}
+                    onDeleteCourse={handleDeleteCourse}
+                    onAddSemester={handleAddSemester}
+                    onUpdateSemester={handleUpdateSemester}
+                    onArchiveSemester={handleArchiveSemester}
+                    onAddSection={handleAddSection}
+                    onUpdateSection={handleUpdateSection}
+                    onDeleteSection={handleDeleteSection}
+                    onAssignFacultyToSection={handleAssignFacultyToSection}
+                    onRemoveFacultySubjectAssignment={handleRemoveFacultySubjectAssignment}
+                    currentRole="ADMIN"
+                    userAssignedDeptId={userAssignedDeptId}
+                  />
+                )}
+
+                {activeTab === 'timetable' && (
+                  <TimetableEngine
+                    currentRole="ADMIN"
+                    userAssignedDeptId={userAssignedDeptId}
+                    departments={departments}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    subjects={subjects}
+                    sections={sections}
+                    semesters={semesters}
+                    rooms={rooms}
+                    labs={labs}
+                    workingDays={workingDays}
+                    timeSlots={timeSlots}
+                    unavailableSlots={unavailableSlots}
+                    workloadRules={workloadRules}
+                    workloadLimits={workloadLimits}
+                    facultySubjectAssignments={facultySubjectAssignments}
+                    timetables={timetables}
+                    timetableEntries={timetableEntries}
+                    timetableConflicts={timetableConflicts}
+                    onSaveEntries={handleSaveTimetableEntries}
+                    onUpdateTimetable={handleUpdateTimetable}
+                    onCreateTimetable={handleCreateTimetable}
+                    onOpenExportModal={() => setIsExportModalOpen(true)}
+                  />
+                )}
+
+                {activeTab === 'rooms' && (
+                  <RoomLabManagement
+                    rooms={rooms}
+                    labs={labs}
+                    departments={departments}
+                    onAddRoom={handleAddRoom}
+                    onAddLab={handleAddLab}
+                    currentRole="ADMIN"
+                    userAssignedDeptId={userAssignedDeptId}
+                    initialTab="rooms"
+                  />
+                )}
+
+                {activeTab === 'labs' && (
+                  <RoomLabManagement
+                    rooms={rooms}
+                    labs={labs}
+                    departments={departments}
+                    onAddRoom={handleAddRoom}
+                    onAddLab={handleAddLab}
+                    currentRole="ADMIN"
+                    userAssignedDeptId={userAssignedDeptId}
+                    initialTab="labs"
+                  />
+                )}
+
+                {activeTab === 'leaves' && (
+                  <LeaveManagement
+                    currentRole="ADMIN"
+                    instituteId={institute.id}
+                    currentUser={users[0]}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    departments={departments}
+                    subjects={subjects}
+                    rooms={rooms}
+                    labs={labs}
+                    sections={sections}
+                    timeSlots={timeSlots}
+                    deptAssignments={assignments}
+                    unavailableSlots={unavailableSlots}
+                    workloads={workloads}
+                    timetableEntries={timetableEntries}
+                    leaves={leaves}
+                    leaveTypes={leaveTypes}
+                    leaveBalances={leaveBalances}
+                    substitutes={substitutes}
+                    notifications={leaveNotifications}
+                    auditLogs={leaveAuditLogs}
+                    onApplyLeave={handleApplyLeave}
+                    onApproveLeave={handleApproveLeave}
+                    onRejectLeave={handleRejectLeave}
+                    onCancelLeave={handleCancelLeave}
+                    onAssignSubstitute={handleAssignSubstitute}
+                    onCreateLeaveType={handleCreateLeaveType}
+                  />
+                )}
+              </>
             )}
 
-            {activeTab === 'clash-engine' && (
-              <TimetableEngine
-                currentRole={currentRole}
-                userAssignedDeptId={departments[0]?.id}
-                departments={departments}
-                facultyProfiles={facultyProfiles}
-                users={users}
-                subjects={subjects}
-                sections={sections}
-                semesters={semesters}
-                rooms={rooms}
-                labs={labs}
-                workingDays={workingDays}
-                timeSlots={timeSlots}
-                unavailableSlots={unavailableSlots}
-                workloadRules={workloadRules}
-                workloadLimits={workloadLimits}
-                facultySubjectAssignments={facultySubjectAssignments}
-                timetables={timetables}
-                timetableEntries={timetableEntries}
-                timetableConflicts={timetableConflicts}
-                onSaveEntries={handleSaveTimetableEntries}
-                onUpdateTimetable={handleUpdateTimetable}
-                onCreateTimetable={handleCreateTimetable}
-                onOpenExportModal={() => setIsExportModalOpen(true)}
-              />
-            )}
+            {/* ------------------------------------------------------------- */}
+            {/* ROLE: HEAD - Institute-Wide Access                             */}
+            {/* ------------------------------------------------------------- */}
+            {currentRole === 'HEAD' && (
+              <>
+                {activeTab === 'institute' && (
+                  <div className="space-y-6">
+                    {departments.length === 0 && (
+                      <OnboardingGuide
+                        instituteName={institute.name}
+                        instituteCode={institute.code}
+                        departmentCount={departments.length}
+                        facultyCount={facultyProfiles.length}
+                        subjectCount={subjects.length}
+                        roomCount={rooms.length + labs.length}
+                        timetableCount={timetables.length}
+                        onNavigate={(tab) => setActiveTab(tab)}
+                        onSwitchToDemo={handleSwitchToDemo}
+                      />
+                    )}
+                    <InstituteOnboarding
+                      institute={institute}
+                      onUpdateInstitute={handleUpdateInstitute}
+                    />
+                  </div>
+                )}
 
-            {activeTab === 'supabase' && <SupabaseStudio />}
+                {activeTab === 'departments' && (
+                  <div className="space-y-6">
+                    {departments.length === 0 && (
+                      <OnboardingGuide
+                        instituteName={institute.name}
+                        instituteCode={institute.code}
+                        departmentCount={departments.length}
+                        facultyCount={facultyProfiles.length}
+                        subjectCount={subjects.length}
+                        roomCount={rooms.length + labs.length}
+                        timetableCount={timetables.length}
+                        onNavigate={(tab) => setActiveTab(tab)}
+                        onSwitchToDemo={handleSwitchToDemo}
+                      />
+                    )}
+                    <DepartmentManagement
+                      departments={departments}
+                      assignments={assignments}
+                      subjects={subjects}
+                      users={users}
+                      onAddDepartment={handleAddDepartment}
+                      onUpdateDepartment={handleUpdateDepartment}
+                      onDeleteDepartment={handleDeleteDepartment}
+                      currentRole="HEAD"
+                      isLoading={isDepartmentsLoading}
+                    />
+                  </div>
+                )}
 
-            {activeTab === 'analytics' && (
-              <AnalyticsDashboard
-                departments={departments}
-                facultyProfiles={facultyProfiles}
-                users={users}
-                subjects={subjects}
-                rooms={rooms}
-                labs={labs}
-                timetables={timetables}
-                timetableEntries={timetableEntries}
-                timetableConflicts={timetableConflicts}
-                workloads={workloads}
-              />
-            )}
+                {activeTab === 'faculty' && (
+                  <FacultyManagement
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    departments={departments}
+                    assignments={assignments}
+                    workloads={workloads}
+                    subjects={subjects}
+                    availabilities={availabilities}
+                    onAddAssignment={handleAddAssignment}
+                    onRemoveAssignment={handleRemoveAssignment}
+                    onAddFaculty={handleAddFaculty}
+                    onUpdateFacultyProfile={handleUpdateFacultyProfile}
+                    onAssignSubject={handleAllocateFaculty}
+                    onRemoveWorkloadAllocation={handleRemoveWorkloadAllocation}
+                    onAddAvailability={handleAddAvailability}
+                    onRemoveAvailability={handleRemoveAvailability}
+                    currentRole="HEAD"
+                  />
+                )}
 
-            {activeTab === 'subscription' && (
-              <SubscriptionManager
-                currentRole={currentRole}
-                subscription={subscription}
-                billingHistory={billingHistory}
-                departments={departments}
-                facultyProfiles={facultyProfiles}
-                rooms={rooms}
-                timetables={timetables}
-                onSubscriptionUpdated={handleUpdateSubscription}
-              />
-            )}
+                {activeTab === 'subjects' && (
+                  <SubjectAllocation
+                    subjects={subjects}
+                    departments={departments}
+                    courses={courses}
+                    semesters={semesters}
+                    sections={sections}
+                    sectionSubjects={sectionSubjects}
+                    facultySubjectAssignments={facultySubjectAssignments}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    workloads={workloads}
+                    onAddSubject={handleAddSubject}
+                    onUpdateSubject={handleUpdateSubject}
+                    onDeleteSubject={handleDeleteSubject}
+                    onAddCourse={handleAddCourse}
+                    onUpdateCourse={handleUpdateCourse}
+                    onDeleteCourse={handleDeleteCourse}
+                    onAddSemester={handleAddSemester}
+                    onUpdateSemester={handleUpdateSemester}
+                    onArchiveSemester={handleArchiveSemester}
+                    onAddSection={handleAddSection}
+                    onUpdateSection={handleUpdateSection}
+                    onDeleteSection={handleDeleteSection}
+                    onAssignFacultyToSection={handleAssignFacultyToSection}
+                    onRemoveFacultySubjectAssignment={handleRemoveFacultySubjectAssignment}
+                    currentRole="HEAD"
+                  />
+                )}
 
-            {activeTab === 'audit-logs' && (
-              <AuditLogsViewer
-                logs={auditLogs}
-                currentRole={currentRole}
-              />
-            )}
+                {activeTab === 'rooms-labs' && (
+                  <RoomLabManagement
+                    rooms={rooms}
+                    labs={labs}
+                    departments={departments}
+                    onAddRoom={handleAddRoom}
+                    onAddLab={handleAddLab}
+                    currentRole="HEAD"
+                  />
+                )}
 
-            {activeTab === 'notifications' && (
-              <NotificationCenter
-                notifications={notifications}
-                instituteId={institute.id}
-                onNotificationRead={handleNotificationRead}
-                onAllRead={handleAllNotificationsRead}
-                onNavigate={(tab) => setActiveTab(tab as NavTab)}
-              />
-            )}
+                {activeTab === 'timetable' && (
+                  <TimetableEngine
+                    currentRole="HEAD"
+                    departments={departments}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    subjects={subjects}
+                    sections={sections}
+                    semesters={semesters}
+                    rooms={rooms}
+                    labs={labs}
+                    workingDays={workingDays}
+                    timeSlots={timeSlots}
+                    unavailableSlots={unavailableSlots}
+                    workloadRules={workloadRules}
+                    workloadLimits={workloadLimits}
+                    facultySubjectAssignments={facultySubjectAssignments}
+                    timetables={timetables}
+                    timetableEntries={timetableEntries}
+                    timetableConflicts={timetableConflicts}
+                    onSaveEntries={handleSaveTimetableEntries}
+                    onUpdateTimetable={handleUpdateTimetable}
+                    onCreateTimetable={handleCreateTimetable}
+                    onOpenExportModal={() => setIsExportModalOpen(true)}
+                  />
+                )}
 
-            {activeTab === 'saas-admin' && (
-              <SaasAdminDashboard />
-            )}
+                {activeTab === 'leaves' && (
+                  <LeaveManagement
+                    currentRole="HEAD"
+                    instituteId={institute.id}
+                    currentUser={users[0]}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    departments={departments}
+                    subjects={subjects}
+                    rooms={rooms}
+                    labs={labs}
+                    sections={sections}
+                    timeSlots={timeSlots}
+                    deptAssignments={assignments}
+                    unavailableSlots={unavailableSlots}
+                    workloads={workloads}
+                    timetableEntries={timetableEntries}
+                    leaves={leaves}
+                    leaveTypes={leaveTypes}
+                    leaveBalances={leaveBalances}
+                    substitutes={substitutes}
+                    notifications={leaveNotifications}
+                    auditLogs={leaveAuditLogs}
+                    onApplyLeave={handleApplyLeave}
+                    onApproveLeave={handleApproveLeave}
+                    onRejectLeave={handleRejectLeave}
+                    onCancelLeave={handleCancelLeave}
+                    onAssignSubstitute={handleAssignSubstitute}
+                    onCreateLeaveType={handleCreateLeaveType}
+                  />
+                )}
 
-            {activeTab === 'settings' && (
-              <SettingsManager
-                institute={institute}
-                currentUser={users[0]}
-                currentRole={currentRole}
-                onUpdateInstitute={handleUpdateInstitute}
-                onUpdateUserProfile={handleUpdateUserProfile}
-              />
+                {activeTab === 'analytics' && (
+                  <AnalyticsDashboard
+                    departments={departments}
+                    facultyProfiles={facultyProfiles}
+                    users={users}
+                    subjects={subjects}
+                    rooms={rooms}
+                    labs={labs}
+                    timetables={timetables}
+                    timetableEntries={timetableEntries}
+                    timetableConflicts={timetableConflicts}
+                    workloads={workloads}
+                  />
+                )}
+
+                {activeTab === 'settings' && (
+                  <SettingsManager
+                    institute={institute}
+                    currentUser={users[0]}
+                    currentRole="HEAD"
+                    onUpdateInstitute={handleUpdateInstitute}
+                    onUpdateUserProfile={handleUpdateUserProfile}
+                  />
+                )}
+              </>
             )}
             </div>
           </ErrorBoundary>

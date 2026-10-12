@@ -3,26 +3,23 @@ import {
   ShieldCheck, 
   Database, 
   Layers, 
-  UserCheck, 
-  AlertTriangle,
   Building2,
-  Calendar,
   Sparkles,
   ExternalLink,
   Bell,
   Menu,
   LogOut,
-  ShieldAlert
+  UserCheck
 } from 'lucide-react';
 import { UserRole } from '../types/database';
 
 interface NavbarProps {
   currentRole: UserRole;
-  onRoleChange: (role: UserRole) => void;
   instituteName: string;
   academicYear: string;
   isLiveSupabase: boolean;
-  onOpenSupabaseConfig: () => void;
+  isDemoEnvironment?: boolean;
+  onOpenSupabaseConfig?: () => void;
   activeClashesCount: number;
   unreadNotificationsCount?: number;
   onOpenNotifications?: () => void;
@@ -33,10 +30,10 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentRole,
-  onRoleChange,
   instituteName,
   academicYear,
   isLiveSupabase,
+  isDemoEnvironment = false,
   onOpenSupabaseConfig,
   activeClashesCount,
   unreadNotificationsCount = 0,
@@ -45,6 +42,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileSidebar,
   onLogout,
 }) => {
+  const roleLabel =
+    currentRole === 'HEAD'
+      ? 'Head of Institute'
+      : currentRole === 'ADMIN'
+      ? 'Department Admin'
+      : 'Faculty Member';
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#0A0A0A]/90 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-3 sm:px-6 lg:px-8">
@@ -85,8 +89,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Right: Actions, Database, Role, Notifications & Logout */}
+        {/* Right: Actions, Database, Authoritative Role Badge & Logout */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Demo Sandbox Pill */}
+          {isDemoEnvironment && (
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+              <Sparkles className="h-3 w-3 text-amber-400" />
+              <span>Demo Sandbox</span>
+            </div>
+          )}
+
           {/* Public Website Button */}
           {onGoToPublicWebsite && (
             <button
@@ -98,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Health Status */}
+          {/* Clash Health Status */}
           <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/[0.06] bg-zinc-900/60 text-xs">
             <div className={`h-2 w-2 rounded-full ${activeClashesCount === 0 ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-rose-500 shadow-rose-500/50'} shadow-sm`} />
             <span className="text-zinc-300">
@@ -123,39 +135,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           {/* Supabase Connection Indicator */}
-          <button
-            onClick={onOpenSupabaseConfig}
-            className={`hidden sm:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-              isLiveSupabase 
-                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/40' 
-                : 'bg-zinc-900/80 text-zinc-300 border-white/[0.08] hover:border-indigo-500/50 hover:bg-zinc-800/80'
-            }`}
-          >
-            <Database className={`h-3.5 w-3.5 ${isLiveSupabase ? 'text-emerald-400' : 'text-[#06B6D4]'}`} />
-            <span className="hidden md:inline">
-              {isLiveSupabase ? 'Supabase Connected' : 'Supabase Studio / DDL'}
-            </span>
-          </button>
+          {onOpenSupabaseConfig && (
+            <button
+              onClick={onOpenSupabaseConfig}
+              className={`hidden sm:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                isLiveSupabase 
+                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/40' 
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/[0.08] hover:border-indigo-500/50 hover:bg-zinc-800/80'
+              }`}
+            >
+              <Database className={`h-3.5 w-3.5 ${isLiveSupabase ? 'text-emerald-400' : 'text-[#06B6D4]'}`} />
+              <span className="hidden md:inline">
+                {isLiveSupabase ? 'Supabase Connected' : 'Supabase Studio'}
+              </span>
+            </button>
+          )}
 
-          {/* Role Switcher Pill */}
-          <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-zinc-900/90 border border-white/[0.08]">
-            {(['HEAD', 'ADMIN', 'FACULTY'] as UserRole[]).map((role) => {
-              const isActive = currentRole === role;
-              return (
-                <button
-                  key={role}
-                  onClick={() => onRoleChange(role)}
-                  className={`px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs rounded-lg font-medium transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow-md shadow-indigo-500/25'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]'
-                  }`}
-                  title={`Switch active view context to ${role}`}
-                >
-                  {role}
-                </button>
-              );
-            })}
+          {/* Authoritative User Role Badge (Role Switching REMOVED) */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900/90 border border-white/[0.08]">
+            <ShieldCheck className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline text-xs font-semibold text-white">
+              {roleLabel}
+            </span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+              currentRole === 'HEAD'
+                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                : currentRole === 'ADMIN'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+            }`}>
+              {currentRole}
+            </span>
           </div>
 
           {/* Logout Button */}

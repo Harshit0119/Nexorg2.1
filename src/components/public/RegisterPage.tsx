@@ -37,8 +37,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [password, setPassword] = useState('');
   const [academicYear, setAcademicYear] = useState('2025-2026');
   
-  // Default department list ready for (CSE, IT, EC) test case
-  const [selectedDepts, setSelectedDepts] = useState<string[]>(['CSE', 'IT', 'EC']);
+  // Optional initial department list - can start completely empty
+  const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [customDeptInput, setCustomDeptInput] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,23 +56,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
   const handleTogglePreset = (code: string) => {
     if (selectedDepts.includes(code)) {
-      if (selectedDepts.length > 1) {
-        setSelectedDepts(selectedDepts.filter((d) => d !== code));
-      }
+      setSelectedDepts(selectedDepts.filter((d) => d !== code));
     } else {
       setSelectedDepts([...selectedDepts, code]);
     }
   };
 
   const handleRemoveDept = (deptToRemove: string) => {
-    if (selectedDepts.length > 1) {
-      setSelectedDepts(selectedDepts.filter((d) => d !== deptToRemove));
-    }
+    setSelectedDepts(selectedDepts.filter((d) => d !== deptToRemove));
   };
 
   const handleAddCustomDept = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const trimmed = customDeptInput.trim();
+    const trimmed = customDeptInput.trim().toUpperCase();
     if (!trimmed) return;
 
     if (!selectedDepts.includes(trimmed)) {
@@ -99,10 +95,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     }
     if (!admEmail || !admEmail.includes('@')) {
       setFormError('Please provide a valid official institution email.');
-      return;
-    }
-    if (selectedDepts.length === 0) {
-      setFormError('Please specify at least one academic department for the institute.');
       return;
     }
 
