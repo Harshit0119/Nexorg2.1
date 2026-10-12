@@ -1,0 +1,7 @@
+{
+  "name": "Nexorg 2.1 - Academic Resource Planning",
+  "description": "Enterprise academic resource planning platform for institutions. Multi-department faculty management, room/lab allocation, workload balancing, and clash-free timetable architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
