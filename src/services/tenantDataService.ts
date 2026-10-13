@@ -39,7 +39,45 @@ import {
   SubstituteAssignment,
   LeaveNotification,
   LeaveAuditLog,
+  AcademicDay,
 } from '../types/database';
+
+export function createDefaultWorkingDays(instituteId: string): InstituteWorkingDay[] {
+  const days: AcademicDay[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  return days.map((day, idx) => ({
+    id: `iwd-${instituteId}-${day.toLowerCase()}`,
+    institute_id: instituteId,
+    day_of_week: day,
+    is_working_day: day !== 'SATURDAY',
+    day_order: idx + 1,
+    created_at: new Date().toISOString(),
+  }));
+}
+
+export function createDefaultTimeSlots(instituteId: string): InstituteTimeSlot[] {
+  return [
+    { id: `slot-${instituteId}-1`, institute_id: instituteId, slot_number: 1, label: 'Period 1', slot_type: 'LECTURE', start_time: '09:00', end_time: '10:00', is_break: false, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-2`, institute_id: instituteId, slot_number: 2, label: 'Period 2', slot_type: 'LECTURE', start_time: '10:00', end_time: '11:00', is_break: false, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-3`, institute_id: instituteId, slot_number: 3, label: 'Period 3', slot_type: 'LECTURE', start_time: '11:15', end_time: '12:15', is_break: false, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-4`, institute_id: instituteId, slot_number: 4, label: 'Period 4', slot_type: 'LECTURE', start_time: '12:15', end_time: '13:15', is_break: false, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-lunch`, institute_id: instituteId, slot_number: 5, label: 'Lunch Break', slot_type: 'LUNCH_BREAK', start_time: '13:15', end_time: '14:00', is_break: true, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-5`, institute_id: instituteId, slot_number: 6, label: 'Period 5', slot_type: 'LECTURE', start_time: '14:00', end_time: '15:00', is_break: false, is_active: true, created_at: new Date().toISOString() },
+    { id: `slot-${instituteId}-6`, institute_id: instituteId, slot_number: 7, label: 'Period 6', slot_type: 'LECTURE', start_time: '15:00', end_time: '16:00', is_break: false, is_active: true, created_at: new Date().toISOString() },
+  ];
+}
+
+export function createDefaultTimingConfig(): InstituteTimingConfig {
+  return {
+    working_days: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+    college_start_time: '09:00',
+    college_end_time: '16:00',
+    total_periods_per_day: 6,
+    period_duration_minutes: 60,
+    lunch_break_start: '13:15',
+    lunch_break_end: '14:00',
+    lunch_after_period: 4,
+  };
+}
 
 import {
   isDemoInstitute,
@@ -230,33 +268,12 @@ export async function fetchTenantAcademicData(targetInstitute: Institute): Promi
         timetableSlots: localCache.timetableSlots || [],
         availabilities: localCache.availabilities || [],
         invitations: localCache.invitations || [],
-        workingDays: localCache.workingDays || [
-          { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
-        ],
-        timeSlots: localCache.timeSlots || [
-          { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
-          { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
-          { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
-          { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
-          { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
-          { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
-        ],
+        workingDays: localCache.workingDays || createDefaultWorkingDays(instituteId),
+        timeSlots: localCache.timeSlots || createDefaultTimeSlots(instituteId),
         unavailableSlots: localCache.unavailableSlots || [],
         workloadRules: localCache.workloadRules || [],
         workloadLimits: localCache.workloadLimits || [],
-        timingConfig: localCache.timingConfig || {
-          institute_id: instituteId,
-          period_duration_minutes: 60,
-          break_duration_minutes: 15,
-          lunch_start_time: '13:15',
-          lunch_end_time: '14:00',
-          max_daily_slots: 6,
-        },
+        timingConfig: localCache.timingConfig || createDefaultTimingConfig(),
         timetables: (timetablesRes.data as Timetable[]) || localCache.timetables || [],
         timetableEntries: (entriesRes.data as TimetableEntry[]) || localCache.timetableEntries || [],
         timetableConflicts: localCache.timetableConflicts || [],
@@ -293,33 +310,12 @@ export async function fetchTenantAcademicData(targetInstitute: Institute): Promi
       timetableSlots: cached.timetableSlots || [],
       availabilities: cached.availabilities || [],
       invitations: cached.invitations || [],
-      workingDays: cached.workingDays || [
-        { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-        { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-        { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-        { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-        { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-        { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
-      ],
-      timeSlots: cached.timeSlots || [
-        { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
-        { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
-        { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
-        { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
-        { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
-        { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
-      ],
+      workingDays: cached.workingDays || createDefaultWorkingDays(instituteId),
+      timeSlots: cached.timeSlots || createDefaultTimeSlots(instituteId),
       unavailableSlots: cached.unavailableSlots || [],
       workloadRules: cached.workloadRules || [],
       workloadLimits: cached.workloadLimits || [],
-      timingConfig: cached.timingConfig || {
-        institute_id: instituteId,
-        period_duration_minutes: 60,
-        break_duration_minutes: 15,
-        lunch_start_time: '13:15',
-        lunch_end_time: '14:00',
-        max_daily_slots: 6,
-      },
+      timingConfig: cached.timingConfig || createDefaultTimingConfig(),
       timetables: cached.timetables || [],
       timetableEntries: cached.timetableEntries || [],
       timetableConflicts: cached.timetableConflicts || [],
@@ -351,33 +347,12 @@ export async function fetchTenantAcademicData(targetInstitute: Institute): Promi
     timetableSlots: [],
     availabilities: [],
     invitations: [],
-    workingDays: [
-      { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-      { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-      { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-      { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-      { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-      { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
-    ],
-    timeSlots: [
-      { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
-      { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
-      { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
-      { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
-      { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
-      { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
-    ],
+    workingDays: createDefaultWorkingDays(instituteId),
+    timeSlots: createDefaultTimeSlots(instituteId),
     unavailableSlots: [],
     workloadRules: [],
     workloadLimits: [],
-    timingConfig: {
-      institute_id: instituteId,
-      period_duration_minutes: 60,
-      break_duration_minutes: 15,
-      lunch_start_time: '13:15',
-      lunch_end_time: '14:00',
-      max_daily_slots: 6,
-    },
+    timingConfig: createDefaultTimingConfig(),
     timetables: [],
     timetableEntries: [],
     timetableConflicts: [],

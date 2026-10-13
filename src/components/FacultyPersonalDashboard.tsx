@@ -316,11 +316,11 @@ export const FacultyPersonalDashboard: React.FC<FacultyPersonalDashboardProps> =
                       </div>
                       <div className="p-2 rounded bg-zinc-800/50">
                         <span className="text-zinc-500 block text-[10px]">Weekly Hrs</span>
-                        <span className="font-bold text-indigo-400">{sub.weekly_hours || 4}h</span>
+                        <span className="font-bold text-indigo-400">{((sub.lecture_hours_per_week || 0) + (sub.lab_hours_per_week || 0)) || (sub.credits || 4)}h</span>
                       </div>
                       <div className="p-2 rounded bg-zinc-800/50">
                         <span className="text-zinc-500 block text-[10px]">Lab Req</span>
-                        <span className="font-bold text-cyan-400">{sub.requires_lab ? 'Yes' : 'No'}</span>
+                        <span className="font-bold text-cyan-400">{((sub.lab_hours_per_week || 0) > 0 || (sub.practical_hours || 0) > 0) ? 'Yes' : 'No'}</span>
                       </div>
                     </div>
                   </div>

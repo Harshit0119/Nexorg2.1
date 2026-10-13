@@ -104,11 +104,11 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => onNavigate('clash-engine')}
+              onClick={() => onNavigate('timetable')}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-indigo-500/20 hover:opacity-95 transition-all"
             >
               <ShieldCheck className="h-4 w-4" />
-              <span>Simulate Conflict Engine</span>
+              <span>Open Timetable Engine</span>
             </button>
             <button
               onClick={() => onNavigate('faculty')}
@@ -237,17 +237,17 @@ export const OverviewDashboard: React.FC<OverviewDashboardProps> = ({
 
           <div className="shrink-0 flex flex-col gap-2">
             <button
-              onClick={() => onNavigate('clash-engine')}
+              onClick={() => onNavigate('timetable')}
               className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-md transition-all flex items-center justify-center gap-2"
             >
-              <span>Test Rahul Conflict Engine</span>
+              <span>Timetable Master Schedule</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => onNavigate('workload')}
+              onClick={() => onNavigate('faculty')}
               className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-white/[0.08] transition-all flex items-center justify-center gap-2"
             >
-              <span>View Multi-Dept Load</span>
+              <span>View Faculty Load</span>
             </button>
             <button
               onClick={() => onNavigate('leaves')}

@@ -25,7 +25,14 @@ import { ExportModal } from './components/ExportModal';
 import { LeaveManagement } from './components/LeaveManagement';
 import { OnboardingGuide } from './components/OnboardingGuide';
 import { FacultyPersonalDashboard, FacultyTab } from './components/FacultyPersonalDashboard';
-import { fetchTenantAcademicData, saveTenantToLocalStorage, TenantDataset } from './services/tenantDataService';
+import {
+  fetchTenantAcademicData,
+  saveTenantToLocalStorage,
+  TenantDataset,
+  createDefaultWorkingDays,
+  createDefaultTimeSlots,
+  createDefaultTimingConfig,
+} from './services/tenantDataService';
 import { DEMO_INSTITUTE, DEMO_INSTITUTE_ID, isDemoInstitute } from './services/demoData';
 import { Sparkles } from 'lucide-react';
 
@@ -128,6 +135,14 @@ export default function App() {
     address: 'Academic Campus',
     website: 'https://univ.edu',
     subscription_tier: 'STARTER',
+    settings: {
+      working_days: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+      day_start_time: '09:00:00',
+      day_end_time: '17:00:00',
+      period_duration_minutes: 60,
+      max_consecutive_faculty_hours: 3,
+      default_faculty_max_hours: 18,
+    },
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });
@@ -147,33 +162,12 @@ export default function App() {
   const [timetableSlots, setTimetableSlots] = useState<TimetableSlot[]>([]);
   const [availabilities, setAvailabilities] = useState<FacultyAvailability[]>([]);
   const [invitations, setInvitations] = useState<InstituteInvitation[]>([]);
-  const [workingDays, setWorkingDays] = useState<InstituteWorkingDay[]>([
-    { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-    { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-    { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-    { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-    { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-    { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
-  ]);
-  const [timeSlots, setTimeSlots] = useState<InstituteTimeSlot[]>([
-    { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
-    { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
-    { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
-    { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
-    { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
-    { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
-  ]);
+  const [workingDays, setWorkingDays] = useState<InstituteWorkingDay[]>(() => createDefaultWorkingDays('inst-new'));
+  const [timeSlots, setTimeSlots] = useState<InstituteTimeSlot[]>(() => createDefaultTimeSlots('inst-new'));
   const [unavailableSlots, setUnavailableSlots] = useState<FacultyUnavailableSlot[]>([]);
   const [workloadRules, setWorkloadRules] = useState<WorkloadRule[]>([]);
   const [workloadLimits, setWorkloadLimits] = useState<WorkloadLimit[]>([]);
-  const [timingConfig, setTimingConfig] = useState<InstituteTimingConfig>({
-    institute_id: 'inst-new',
-    period_duration_minutes: 60,
-    break_duration_minutes: 15,
-    lunch_start_time: '13:15',
-    lunch_end_time: '14:00',
-    max_daily_slots: 6,
-  });
+  const [timingConfig, setTimingConfig] = useState<InstituteTimingConfig>(() => createDefaultTimingConfig());
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
   const [timetableConflicts, setTimetableConflicts] = useState<TimetableConflict[]>([]);
@@ -1267,7 +1261,7 @@ export default function App() {
         academic_year: newInst.academic_year || '2025-2026',
       });
 
-      const savedInst = instResult.data || ({
+      const savedInst: Institute = instResult.data || ({
         id: `inst-${instCode.toLowerCase()}-${Date.now().toString(36)}`,
         name: instName,
         code: instCode,
@@ -1277,9 +1271,17 @@ export default function App() {
         address: newInst.address || 'Academic Campus',
         website: newInst.website || `https://${instCode.toLowerCase()}.edu`,
         subscription_tier: 'STARTER',
+        settings: {
+          working_days: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+          day_start_time: '09:00:00',
+          day_end_time: '17:00:00',
+          period_duration_minutes: 60,
+          max_consecutive_faculty_hours: 3,
+          default_faculty_max_hours: 18,
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      } as Institute);
+      });
 
       // Provision optional departments if user specified any
       let createdDepts: Department[] = [];
@@ -1318,33 +1320,12 @@ export default function App() {
         timetableSlots: [],
         availabilities: [],
         invitations: [],
-        workingDays: [
-          { day_of_week: 'MONDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'TUESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'WEDNESDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'THURSDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'FRIDAY', is_working_day: true, start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'SATURDAY', is_working_day: false, start_time: '09:00', end_time: '13:00' },
-        ],
-        timeSlots: [
-          { id: 'ts-1', slot_number: 1, start_time: '09:00', end_time: '10:00', label: 'Period 1' },
-          { id: 'ts-2', slot_number: 2, start_time: '10:00', end_time: '11:00', label: 'Period 2' },
-          { id: 'ts-3', slot_number: 3, start_time: '11:15', end_time: '12:15', label: 'Period 3' },
-          { id: 'ts-4', slot_number: 4, start_time: '12:15', end_time: '13:15', label: 'Period 4' },
-          { id: 'ts-5', slot_number: 5, start_time: '14:00', end_time: '15:00', label: 'Period 5' },
-          { id: 'ts-6', slot_number: 6, start_time: '15:00', end_time: '16:00', label: 'Period 6' },
-        ],
+        workingDays: createDefaultWorkingDays(savedInst.id),
+        timeSlots: createDefaultTimeSlots(savedInst.id),
         unavailableSlots: [],
         workloadRules: [],
         workloadLimits: [],
-        timingConfig: {
-          institute_id: savedInst.id,
-          period_duration_minutes: 60,
-          break_duration_minutes: 15,
-          lunch_start_time: '13:15',
-          lunch_end_time: '14:00',
-          max_daily_slots: 6,
-        },
+        timingConfig: createDefaultTimingConfig(),
         timetables: [],
         timetableEntries: [],
         timetableConflicts: [],
@@ -1396,11 +1377,24 @@ export default function App() {
         });
       } else {
         const authRes = await authenticateTenantUser(code, mail, selectedRole);
-        const inst = authRes.institute || {
+        const inst: Institute = authRes.institute || {
           id: `inst-${code.toLowerCase()}-${Date.now().toString(36)}`,
           name: `${code} Educational Institution`,
           code: code,
+          institute_type: 'TECHNOLOGY_INSTITUTE',
           academic_year: '2025-2026',
+          timezone: 'Asia/Kolkata (UTC+05:30)',
+          address: 'Academic Campus',
+          website: `https://${code.toLowerCase()}.edu`,
+          subscription_tier: 'STARTER',
+          settings: {
+            working_days: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+            day_start_time: '09:00:00',
+            day_end_time: '17:00:00',
+            period_duration_minutes: 60,
+            max_consecutive_faculty_hours: 3,
+            default_faculty_max_hours: 18,
+          },
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -1408,12 +1402,13 @@ export default function App() {
         const tenantData = await fetchTenantAcademicData(inst);
         applyTenantDataset(tenantData);
 
-        const activeUser = authRes.user || {
+        const activeUser: User = authRes.user || {
           id: `usr-${Date.now()}`,
           institute_id: inst.id,
           email: mail,
           full_name: selectedRole === 'HEAD' ? 'Institutional Director' : selectedRole === 'ADMIN' ? 'Department Admin' : 'Academic Faculty',
           role: selectedRole,
+          is_active: true,
           created_at: new Date().toISOString(),
         };
         setUsers([activeUser]);
@@ -1877,7 +1872,9 @@ export default function App() {
                 leaveBalances={leaveBalances}
                 substitutes={substitutes}
                 onApplyLeave={handleApplyLeave}
-                onUpdateProfile={handleUpdateFacultyProfile}
+                onUpdateProfile={(updatedProfile, updatedUser) =>
+                  handleUpdateFacultyProfile(activeFacultyProfile?.id || '', updatedProfile, updatedUser)
+                }
               />
             )}
 
